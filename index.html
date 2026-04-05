@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>UK Innovation Map</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Controls bar (top on desktop / bottom on mobile) ── -->
+    <div id="controls">
+      <div id="controls-title">UK Innovation Map</div>
+      <div id="toggles">
+        <label class="toggle-item" title="Combined Authorities">
+          <input type="checkbox" id="toggle-ca" checked>
+          <span class="toggle-swatch" style="background:#E8965A;opacity:0.7"></span>
+          <span class="toggle-label"><span class="full">Combined authorities</span><span class="abbr">CAs</span></span>
+        </label>
+        <label class="toggle-item" title="LIPF Areas">
+          <input type="checkbox" id="toggle-lipf" checked>
+          <span class="toggle-swatch lipf-swatch"></span>
+          <span class="toggle-label">LIPF areas</span>
+        </label>
+        <label class="toggle-item" title="Planned Combined Authorities">
+          <input type="checkbox" id="toggle-planned">
+          <span class="toggle-swatch planned-swatch"></span>
+          <span class="toggle-label"><span class="full">Planned CAs</span><span class="abbr">Planned</span></span>
+        </label>
+        <label class="toggle-item" title="Catapult Centres">
+          <input type="checkbox" id="toggle-catapult" checked>
+          <span class="toggle-swatch" style="background:#BA7517"></span>
+          <span class="toggle-label"><span class="full">Catapult centres</span><span class="abbr">Catapults</span></span>
+        </label>
+        <label class="toggle-item" title="Innovation Districts">
+          <input type="checkbox" id="toggle-districts" checked>
+          <span class="toggle-swatch" style="background:#0F6E56"></span>
+          <span class="toggle-label"><span class="full">Innovation districts</span><span class="abbr">Districts</span></span>
+        </label>
+        <label class="toggle-item" title="Universities (top 50 by research income)">
+          <input type="checkbox" id="toggle-universities">
+          <span class="toggle-swatch" style="background:#1B4F9E"></span>
+          <span class="toggle-label"><span class="full">Universities</span><span class="abbr">Unis</span></span>
+        </label>
+      </div>
+      <button id="legend-btn" title="Show legend" aria-label="Show legend">ⓘ</button>
+    </div>
+
+    <!-- ── Map ── -->
+    <div id="map-container">
+      <div id="loading">Loading map data…</div>
+      <svg id="map" aria-label="UK Innovation Map"></svg>
+    </div>
+
+    <!-- ── Legend panel (desktop: sidebar / mobile: drawer) ── -->
+    <div id="legend-panel" class="legend-hidden" role="complementary" aria-label="Map legend">
+      <div id="legend-header">
+        <h3>Legend</h3>
+        <button id="legend-close" aria-label="Close legend">×</button>
+      </div>
+      <div id="legend-body">
+        <section>
+          <h4>Combined Authorities</h4>
+          <p>Shaded filled polygons — click for details.</p>
+        </section>
+        <section>
+          <h4>LIPF Strands</h4>
+          <div class="legend-row"><span class="legend-dash" style="border-color:#BA7517"></span>Earmarked £50m</div>
+          <div class="legend-row"><span class="legend-dash" style="border-color:#0F6E56"></span>Earmarked £30m</div>
+          <div class="legend-row"><span class="legend-dash" style="border-color:#D85A30"></span>Competed (announced Apr 2026)</div>
+          <div class="legend-row"><span class="legend-circle" style="border-color:#BA7517;background:rgba(186,117,23,0.12)"></span>Non-CA LIPF area (circle)</div>
+        </section>
+        <section>
+          <h4>Planned CAs</h4>
+          <div class="legend-row"><span class="legend-dash planned-dash"></span>Planned — mayor target 2026–27</div>
+        </section>
+        <section>
+          <h4>Innovation Assets</h4>
+          <div class="legend-row"><span class="legend-diamond"></span>Catapult centre</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#0F6E56"></span>Innovation district</div>
+          <div class="legend-row"><span class="legend-dot" style="background:#1B4F9E"></span>University (radius = research income)</div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ── Popup overlay ── -->
+    <div id="popup-overlay" class="popup-hidden" role="dialog" aria-modal="true" aria-label="Feature detail">
+      <div id="popup">
+        <button id="popup-close" aria-label="Close">×</button>
+        <div id="popup-content"></div>
+      </div>
+    </div>
+
+  </div><!-- #app -->
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
