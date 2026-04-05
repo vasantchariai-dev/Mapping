@@ -214,11 +214,14 @@ const UK_BBOX = {
   properties: {}
 };
 
-// ONS GeoJSON APIs
+// ONS GeoJSON APIs — &resultRecordCount=500 ensures we get all features
+const ONS = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services";
 const API = {
-  countries: "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Countries_December_2023_GB_BUC/FeatureServer/0/query?where=1%3D1&outFields=CTRY23NM&outSR=4326&f=geojson",
-  cas:       "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Combined_Authorities_December_2023_EN_BUC_2022/FeatureServer/0/query?where=1%3D1&outFields=CAUTH23CD%2CCAUTH23NM&outSR=4326&f=geojson",
-  counties:  "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Counties_and_Unitary_Authorities_April_2023_EN_BUC/FeatureServer/0/query?where=1%3D1&outFields=CTYUA23CD%2CCTYUA23NM&outSR=4326&f=geojson"
+  countries: ONS+"/Countries_December_2023_GB_BUC/FeatureServer/0/query?where=1%3D1&outFields=CTRY23NM&outSR=4326&f=geojson&resultRecordCount=10",
+  // Try without trailing year suffix; fall back to _2022 variant
+  cas:       ONS+"/Combined_Authorities_December_2023_EN_BUC/FeatureServer/0/query?where=1%3D1&outFields=CAUTH23CD%2CCAUTH23NM&outSR=4326&f=geojson&resultRecordCount=500",
+  cas_alt:   ONS+"/Combined_Authorities_December_2023_EN_BUC_2022/FeatureServer/0/query?where=1%3D1&outFields=CAUTH23CD%2CCAUTH23NM&outSR=4326&f=geojson&resultRecordCount=500",
+  counties:  ONS+"/Counties_and_Unitary_Authorities_April_2023_EN_BUC/FeatureServer/0/query?where=1%3D1&outFields=CTYUA23CD%2CCTYUA23NM&outSR=4326&f=geojson&resultRecordCount=500"
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -268,7 +271,10 @@ function escHtml(s) {
 // ─────────────────────────────────────────────────────────────
 function setupMap() {
   const container = document.getElementById("map-container");
-  const w = container.clientWidth, h = container.clientHeight;
+  const rect = container.getBoundingClientRect();
+  // Guard against zero layout (shouldn't happen at window.load but just in case)
+  const w = rect.width  || container.offsetWidth  || window.innerWidth;
+  const h = rect.height || container.offsetHeight || (window.innerHeight - 52);
 
   svg = d3.select("#map")
     .attr("width", w)
@@ -779,22 +785,47 @@ function setupLegend() {
 // ─────────────────────────────────────────────────────────────
 // DATA LOADING
 // ─────────────────────────────────────────────────────────────
+function fetchJson(url) {
+  return fetch(url).then(function(r) {
+    if (!r.ok) throw new Error("HTTP " + r.status + " for " + url);
+    return r.json();
+  }).then(function(data) {
+    // ArcGIS returns an error object when the service name is wrong
+    if (data && data.error) throw new Error("ArcGIS error: " + JSON.stringify(data.error));
+    return data;
+  });
+}
+
 async function loadData() {
-  const results = await Promise.allSettled([
-    fetch(API.countries).then(function(r){ return r.json(); }),
-    fetch(API.cas).then(function(r){ return r.json(); }),
-    fetch(API.counties).then(function(r){ return r.json(); })
+  // Try primary CA URL, fall back to _2022 variant
+  async function loadCAs() {
+    try {
+      const d = await fetchJson(API.cas);
+      if (d.features && d.features.length > 0) return d;
+      throw new Error("Empty feature set");
+    } catch(e) {
+      console.warn("Primary CA URL failed, trying fallback:", e.message);
+      return fetchJson(API.cas_alt).catch(function(e2) {
+        console.warn("CA fallback also failed:", e2.message);
+        return null;
+      });
+    }
+  }
+
+  const [countriesResult, caResult, countyResult] = await Promise.allSettled([
+    fetchJson(API.countries),
+    loadCAs(),
+    fetchJson(API.counties)
   ]);
 
-  const countriesData = results[0].status === "fulfilled" ? results[0].value : null;
-  const caData        = results[1].status === "fulfilled" ? results[1].value : null;
-  const countyData    = results[2].status === "fulfilled" ? results[2].value : null;
+  if (countriesResult.status === "rejected") console.warn("Countries GeoJSON failed:", countriesResult.reason);
+  if (countyResult.status === "rejected")    console.warn("Counties GeoJSON failed:", countyResult.reason);
 
-  if (results[0].status === "rejected") console.warn("Countries GeoJSON failed:", results[0].reason);
-  if (results[1].status === "rejected") console.warn("CA GeoJSON failed:", results[1].reason);
-  if (results[2].status === "rejected") console.warn("Counties GeoJSON failed:", results[2].reason);
-
-  return { countriesData, caData, countyData };
+  return {
+    countriesData: countriesResult.status === "fulfilled" ? countriesResult.value : null,
+    caData:        caResult.status === "fulfilled" ? caResult.value : null,
+    countyData:    countyResult.status === "fulfilled" ? countyResult.value : null
+  };
 }
 
 // Build a feature map keyed by normalised CA name for LIPF matching
@@ -849,4 +880,10 @@ async function init() {
   if (loading) loading.classList.add("hidden");
 }
 
-document.addEventListener("DOMContentLoaded", init);
+// Use window.load (not DOMContentLoaded) so flex layout is fully calculated
+// before we read container dimensions for the projection.
+if (document.readyState === "complete") {
+  init();
+} else {
+  window.addEventListener("load", init);
+}

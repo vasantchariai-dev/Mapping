@@ -33,9 +33,12 @@ html, body {
   background: #fff;
   border-top: 1px solid #e0e0e0;
   box-shadow: 0 -2px 8px rgba(0,0,0,0.12);
+  height: 52px;
   min-height: 52px;
+  max-height: 52px;
   order: 2; /* mobile: bottom */
-  flex-wrap: wrap;
+  flex-shrink: 0;
+  overflow: hidden;
   z-index: 100;
 }
 
@@ -50,23 +53,28 @@ html, body {
 
 #toggles {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   gap: 4px;
   flex: 1;
   align-items: center;
+  /* hide scrollbar but keep scrollable */
+  scrollbar-width: none;
 }
+#toggles::-webkit-scrollbar { display: none; }
 
 .toggle-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 8px;
+  gap: 4px;
+  padding: 4px 7px;
   cursor: pointer;
   border-radius: 6px;
   border: 1px solid #e0e0e0;
   background: #f8f8f8;
-  min-height: 44px;
-  min-width: 44px;
+  height: 36px;
+  flex-shrink: 0;
   transition: background 0.15s;
   user-select: none;
 }
@@ -127,8 +135,7 @@ html, body {
   position: relative;
   background: #c8dff0;  /* sea colour */
   overflow: hidden;
-  height: calc(100dvh - 52px);
-  height: calc(100vh - 52px); /* fallback */
+  min-height: 0; /* allow flex shrink */
 }
 
 #map {
@@ -473,8 +480,6 @@ html, body {
 
   #map-container {
     order: 2;
-    height: calc(100dvh - 52px);
-    height: calc(100vh - 52px);
   }
 
   /* Desktop popup: floating card near click point */
